@@ -41,9 +41,24 @@
     <div class="cx larga">
       <h2>Fases <span class="sub" id="etapas-dia"></span></h2>
       <div id="etapas"></div>
-      <div class="sub" style="margin-top:10px">As fases seguem o relógio. Esta página não lê a conta.</div>
+      <div class="sub" style="margin-top:10px">As fases seguem o relógio.</div>
     </div>
   </div>
+
+  <div class="gr">
+    <div class="cx larga">
+      <h2>Conta real <span class="sub" id="r-estado">· a ligar…</span></h2>
+      <div class="dinh">
+        <div><div class="k">Saldo</div><div class="n" id="r-saldo">—</div><div class="u" id="r-saldo-u"></div></div>
+        <div><div class="k">Patrimônio</div><div class="n" id="r-patr">—</div><div class="u">saldo + posição aberta</div></div>
+        <div><div class="k">Posição do robô</div><div class="n" id="r-pos">—</div><div class="u" id="r-pos-u"></div></div>
+        <div><div class="k">Resultado do robô</div><div class="n" id="r-acum">—</div><div class="u" id="r-acum-u"></div></div>
+      </div>
+      <div class="rolo" style="margin-top:16px"><table id="r-ops"></table></div>
+    </div>
+  </div>
+
+  <h2 style="margin:34px 0 0">Simulação no MetaTrader (set/2025 → set/2026)</h2>
 
   <div class="gr g3">
     <div class="cx"><div class="rot">Saldo</div><div class="conta-n" id="c-saldo" style="font-size:40px">—</div><div class="sub" id="c-saldo-o"></div></div>
@@ -63,9 +78,9 @@
     </div>
   </div>
 
-  <div class="sub" style="margin-top:12px">Conta de 5.000 USD, risco de 1% por operação, simulada no MetaTrader (Strategy Tester) com a cotação real da corretora, set/2025 → set/2026. Resultados líquidos, já com comissão. É simulação: a página não lê a conta real.</div>
+  <div class="sub" style="margin-top:12px">Conta de 5.000 USD, risco de 1% por operação, simulada no MetaTrader (Strategy Tester) com a cotação real da corretora, set/2025 → set/2026. Resultados líquidos, já com comissão. É simulação; a conta real está no quadro acima.</div>
 
-  <div class="rodape">Página estática. Os relógios e a contagem correm no seu navegador.</div>
+  <div class="rodape">Os relógios e a contagem correm no seu navegador; a conta real é lida a cada minuto.</div>
 </div>
 
 <script src="conta.js"></script>
@@ -169,6 +184,37 @@ function pinta(){
       + `<td>${n2(o.lote)}</td><td class="${cls(o.usd)}">${sg(o.usd)}</td><td>${n2(o.saldo)}</td></tr>`).join('')
     + '<tr><td colspan="6" class="sub" style="white-space:normal">11/09/2026: na simulação a posição ficou aberta no fim de semana e o ganho saiu maior do que o normal. A versão atual do robô fecha antes do fim de semana.</td></tr>';
 })();
+
+// ------------------------------------------------ conta real (vigia na VPS -> MySQL -> Railway)
+const URL_CONTA = 'https://dados-cpi-conta-production.up.railway.app/conta.json';
+async function contaReal(){
+  const n2 = v => (+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const sg = v => (v>0?'+':v<0?'−':'') + n2(Math.abs(v));
+  const cls = v => v>0 ? 'pos' : v<0 ? 'neg' : '';
+  const br = s => s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(2,4)+' '+s.slice(11);
+  let d;
+  try { d = await (await fetch(URL_CONTA, {cache:'no-store'})).json(); }
+  catch(e){ el('r-estado').textContent = '· sem ligação aos dados agora'; return; }
+  if (d.erro){ el('r-estado').textContent = '· aguardando o primeiro sinal do vigia'; return; }
+  const idade = (Date.now() - Date.parse(d.atualizado_utc))/60000;
+  el('r-estado').textContent = idade < 10
+    ? `· ao vivo, atualizado há ${Math.max(0,Math.round(idade))} min`
+    : `· vigia sem sinal desde ${fmt(Date.parse(d.atualizado_utc),'America/Sao_Paulo',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} (Brasília)`;
+  el('r-saldo').textContent = n2(d.saldo); el('r-saldo-u').textContent = d.moeda + ' · a conta inteira';
+  el('r-patr').textContent = n2(d.patrimonio);
+  if (d.aberta){
+    el('r-pos').innerHTML = `<span class="${cls(d.aberta.usd)}">${sg(d.aberta.usd)}</span>`;
+    el('r-pos-u').textContent = `${d.aberta.lado} ${n2(d.aberta.lote)} lote desde ${d.aberta.ent.slice(11)} NY`;
+  } else { el('r-pos').textContent = 'nenhuma'; el('r-pos-u').textContent = 'fora do dia da notícia, é o normal'; }
+  const acum = d.ops.reduce((a,o)=>a+o.usd,0), g = d.ops.filter(o=>o.usd>0).length;
+  el('r-acum').innerHTML = d.ops.length ? `<span class="${cls(acum)}">${sg(acum)}</span>` : '—';
+  el('r-acum-u').textContent = d.ops.length ? `${g} de ${d.ops.length} com ganho, desde 12/10/2026` : 'ainda sem operação fechada';
+  el('r-ops').innerHTML = d.ops.length
+    ? '<tr><th>Entrada (NY)</th><th>Saída (NY)</th><th>Lado</th><th>Lote</th><th>Resultado</th></tr>'
+      + d.ops.slice().reverse().map(o => `<tr><td>${br(o.ent)}</td><td>${br(o.sai)}</td><td>${o.lado}</td><td>${n2(o.lote)}</td><td class="${cls(o.usd)}">${sg(o.usd)}</td></tr>`).join('')
+    : '';
+}
+contaReal(); setInterval(contaReal, 60000);
 pinta(); setInterval(pinta, 1000);
 </script>
 </body>
