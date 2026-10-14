@@ -45,9 +45,30 @@
     </div>
   </div>
 
+  <div class="gr g3">
+    <div class="cx"><div class="rot">Saldo</div><div class="conta-n" id="c-saldo" style="font-size:40px">—</div><div class="sub" id="c-saldo-o"></div></div>
+    <div class="cx"><div class="rot">Operações</div><div class="conta-n" id="c-ops" style="font-size:40px">—</div><div class="sub" id="c-ops-o"></div></div>
+    <div class="cx"><div class="rot">Maior queda</div><div class="conta-n" id="c-dd" style="font-size:40px">—</div><div class="sub" id="c-dd-o"></div></div>
+  </div>
+
+  <div class="gr">
+    <div class="cx larga">
+      <h2>Evolução do saldo (USD)</h2>
+      <svg class="graf" id="graf" viewBox="0 0 300 150" preserveAspectRatio="none"></svg>
+      <div class="sub" id="graf-nota" style="margin-top:6px"></div>
+    </div>
+    <div class="cx larga">
+      <h2>Entradas e saídas <span class="sub">· hora de Nova Iorque</span></h2>
+      <div class="rolo"><table id="ops"></table></div>
+    </div>
+  </div>
+
+  <div class="sub" style="margin-top:12px">Conta de 5.000 USD, risco de 1% por operação, simulada no MetaTrader (Strategy Tester) com a cotação real da corretora, set/2025 → set/2026. Resultados líquidos, já com comissão. É simulação: a página não lê a conta real.</div>
+
   <div class="rodape">Página estática. Os relógios e a contagem correm no seu navegador.</div>
 </div>
 
+<script src="conta.js"></script>
 <script>
 const el = id => document.getElementById(id);
 const NY = 'America/New_York';
@@ -120,6 +141,34 @@ function pinta(){
     return `<div class="etapa ${cls}"><div class="nu">${k+1}</div><div><div class="nome">${n}</div><div class="det">${det}</div></div><div class="selo">${selo}</div></div>`;
   }).join('');
 }
+
+// ------------------------------------------------ conta
+(function(){
+  const C = CONTA, O = C.ops, fim = O[O.length-1].saldo, luc = fim - C.inicial;
+  const n2 = v => (+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const sg = v => (v>0?'+':v<0?'−':'') + n2(Math.abs(v));
+  const cls = v => v>0 ? 'pos' : v<0 ? 'neg' : '';
+  const br = s => s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(2,4);
+  const ganhas = O.filter(o => o.usd > 0).length;
+  el('c-saldo').textContent = n2(fim);
+  el('c-saldo-o').textContent = `${sg(luc)} USD (${sg(luc/C.inicial*100)}%) desde ${n2(C.inicial)}`;
+  el('c-ops').textContent = `${ganhas}/${O.length}`;
+  el('c-ops-o').textContent = `operações com ganho · uma por mês`;
+  el('c-dd').textContent = n2(C.dd_patrimonio).replace(/,?0+$/,'') + '%';
+  el('c-dd-o').textContent = `no patrimônio; ${n2(C.dd_saldo)}% no saldo fechado`;
+
+  const pts = [C.inicial].concat(O.map(o => o.saldo));
+  const mn = Math.min(...pts), mx = Math.max(...pts), W=300, H=150, pad=8;
+  const x = i => i/(pts.length-1)*W, y = v => H-pad - (v-mn)/(mx-mn||1)*(H-2*pad);
+  el('graf').innerHTML = `<line x1="0" x2="${W}" y1="${y(C.inicial)}" y2="${y(C.inicial)}" stroke="#E4DFD5" stroke-width="1" vector-effect="non-scaling-stroke"/>`
+    + `<polyline fill="none" stroke="#20558A" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts.map((v,i)=>x(i)+','+y(v)).join(' ')}"/>`;
+  el('graf-nota').textContent = `de ${n2(C.inicial)} a ${n2(fim)} USD em ${O.length} operações · linha cinza = saldo inicial`;
+
+  el('ops').innerHTML = '<tr><th>Entrada</th><th>Saída</th><th>Lado</th><th>Lote</th><th>Resultado</th><th>Saldo</th></tr>'
+    + O.slice().reverse().map(o => `<tr><td>${br(o.ent)} ${o.ent.slice(11)}</td><td>${br(o.sai)} ${o.sai.slice(11)}</td><td>${o.lado}</td>`
+      + `<td>${n2(o.lote)}</td><td class="${cls(o.usd)}">${sg(o.usd)}</td><td>${n2(o.saldo)}</td></tr>`).join('')
+    + '<tr><td colspan="6" class="sub" style="white-space:normal">11/09/2026: na simulação a posição ficou aberta no fim de semana e o ganho saiu maior do que o normal. A versão atual do robô fecha antes do fim de semana.</td></tr>';
+})();
 pinta(); setInterval(pinta, 1000);
 </script>
 </body>
