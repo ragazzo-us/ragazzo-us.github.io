@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CPI News</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<div class="env">
+
+  <div class="cab">
+    <div>
+      <h1>CPI News</h1>
+      <div class="sub">Robô automático · fases do dia da notícia</div>
+    </div>
+    <div class="selo-saude">Robô ativo</div>
+  </div>
+
+  <div class="gr g2">
+    <div class="cx">
+      <div class="rot" id="conta-rot">—</div>
+      <div class="conta-n" id="conta">—</div>
+      <div class="sub" id="conta-quando" style="margin-top:6px"></div>
+      <div style="margin-top:18px">
+        <div style="display:flex;justify-content:space-between" class="sub">
+          <span>Dia da notícia</span><span id="barra-lado"></span></div>
+        <div class="barra o"><i id="barra-dia" style="width:0%"></i></div>
+      </div>
+      <div class="sub" style="margin-top:14px" id="proximos"></div>
+    </div>
+    <div class="cx">
+      <h2>Relógios</h2>
+      <div class="rel" id="relogios"></div>
+    </div>
+  </div>
+
+  <div class="gr">
+    <div class="cx larga">
+      <h2>Fases <span class="sub" id="etapas-dia"></span></h2>
+      <div id="etapas"></div>
+      <div class="sub" style="margin-top:10px">As fases seguem o relógio. Esta página não lê a conta.</div>
+    </div>
+  </div>
+
+  <div class="rodape">Página estática. Os relógios e a contagem correm no seu navegador.</div>
+</div>
+
+<script>
+const el = id => document.getElementById(id);
+const NY = 'America/New_York';
+const DIAS = ['2026-10-14', '2026-11-10', '2026-12-10'];
+const dataBR = s => s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4);
+
+function nyMs(dia, hh, mm){
+  const [y,m,d] = dia.split('-').map(Number);
+  let t = Date.UTC(y, m-1, d, hh, mm);
+  for (let i=0;i<2;i++){
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:NY,hourCycle:'h23',
+      year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(new Date(t))
+      .map(x=>[x.type,x.value]));
+    t += Date.UTC(y, m-1, d, hh, mm) - Date.UTC(+p.year, +p.month-1, +p.day, +p.hour, +p.minute);
+  }
+  return t;
+}
+const sexta = dia => new Date(dia+'T12:00:00Z').getUTCDay() === 5;
+function marcos(dia){
+  const nt = nyMs(dia,8,30), min = 60e3;
+  return {ini:nt-60*min, nt, an:nt+30*min, op:nt+45*min, fim: sexta(dia) ? nyMs(dia,16,50) : nyMs(dia,21,0)};
+}
+function dur(ms){
+  let s = Math.max(0, Math.floor(ms/1000));
+  const d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60), x=s%60;
+  const p=n=>String(n).padStart(2,'0');
+  return d>0 ? `${d}d ${p(h)}:${p(m)}:${p(x)}` : `${p(h)}:${p(m)}:${p(x)}`;
+}
+const fmt = (ms, fuso, opt) => new Intl.DateTimeFormat('pt-BR',Object.assign({timeZone:fuso},opt)).format(new Date(ms));
+
+const RELOGIOS = [['Nova Iorque',NY],['Chicago','America/Chicago'],['Brasília','America/Sao_Paulo'],['UTC','UTC']];
+function pintaRelogios(agora){
+  el('relogios').innerHTML = RELOGIOS.map(([nome,f]) =>
+    `<div><div class="c">${nome}</div><div class="h">${fmt(agora,f,{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})}</div>`
+    + `<div class="d">${fmt(agora,f,{weekday:'short',day:'2-digit',month:'short'})}</div></div>`).join('');
+}
+
+function pinta(){
+  const agora = Date.now();
+  pintaRelogios(agora);
+  const dia = DIAS.find(d => marcos(d).fim > agora);
+  if (!dia){
+    el('conta-rot').textContent = 'Sem notícia marcada'; el('conta').textContent = '—';
+    el('conta-quando').textContent = 'O calendário de 2027 ainda não foi publicado.';
+    el('etapas').innerHTML = ''; return;
+  }
+  const M = marcos(dia);
+  const F = [
+    ['Aguardando', 'o robô espera o dia da notícia', null, M.ini],
+    ['Preparação', 'o robô registra o mercado antes da notícia', M.ini, M.nt],
+    ['Notícia', 'sai o CPI dos EUA (08:30 Nova Iorque)', M.nt, M.an],
+    ['Análise', 'o robô avalia a reação do mercado e decide', M.an, M.op],
+    ['Em operação', 'janela em que a posição, se houver, é gerida pelo robô', M.op, M.fim],
+    ['Encerrada', 'fim da janela do dia', M.fim, null],
+  ];
+  const i = F.findIndex(([, , ini, fim]) => (ini===null || agora >= ini) && (fim===null || agora < fim));
+  const prox = F[i+1];
+  el('conta-rot').textContent = prox ? 'Falta para a fase ' + prox[0] : 'Dia encerrado';
+  el('conta').textContent = prox ? dur(prox[2] - agora) : '—';
+  el('conta-quando').textContent = 'CPI de ' + fmt(nyMs(dia,12,0), NY, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
+    + ' · 08:30 Nova Iorque = ' + fmt(M.nt,'America/Sao_Paulo',{hour:'2-digit',minute:'2-digit'}) + ' Brasília';
+  const pct = Math.min(100, Math.max(0, (agora - M.ini)/(M.fim - M.ini)*100));
+  el('barra-dia').style.width = pct + '%';
+  el('barra-lado').textContent = pct>0 ? Math.round(pct)+'%' : 'ainda não começou';
+  el('proximos').textContent = 'Próximas datas: ' + DIAS.filter(d => marcos(d).fim > agora).map(dataBR).join(' · ');
+  el('etapas-dia').textContent = '· ' + dataBR(dia);
+  el('etapas').innerHTML = F.map(([n,det],k) => {
+    const cls = k<i ? 'et-feito' : k===i ? 'et-agora' : '';
+    const selo = k<i ? 'feito' : k===i ? 'agora' : 'por vir';
+    return `<div class="etapa ${cls}"><div class="nu">${k+1}</div><div><div class="nome">${n}</div><div class="det">${det}</div></div><div class="selo">${selo}</div></div>`;
+  }).join('');
+}
+pinta(); setInterval(pinta, 1000);
+</script>
+</body>
+</html>
