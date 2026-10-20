@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desemprego Reino Unido</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<div class="env">
+
+  <div class="cab">
+    <div>
+      <h1>Desemprego Reino Unido</h1>
+      <div class="sub">Robô automático · fases da madrugada da notícia</div>
+    </div>
+    <div class="selo-saude" id="selo">Robô ativo</div>
+  </div>
+
+  <div class="gr g2">
+    <div class="cx">
+      <div class="rot" id="conta-rot">—</div>
+      <div class="conta-n" id="conta">—</div>
+      <div class="sub" id="conta-quando" style="margin-top:6px"></div>
+      <div style="margin-top:18px">
+        <div style="display:flex;justify-content:space-between" class="sub">
+          <span>Madrugada da notícia</span><span id="barra-lado"></span></div>
+        <div class="barra o"><i id="barra-dia" style="width:0%"></i></div>
+      </div>
+      <div class="sub" style="margin-top:14px" id="proximos"></div>
+    </div>
+    <div class="cx">
+      <h2>Relógios</h2>
+      <div class="rel" id="relogios"></div>
+    </div>
+  </div>
+
+  <div class="gr">
+    <div class="cx larga">
+      <h2>Fases <span class="sub" id="etapas-dia"></span></h2>
+      <div id="etapas"></div>
+      <div class="sub" style="margin-top:10px">As fases seguem o relógio. Horas de Chicago.</div>
+    </div>
+  </div>
+
+  <div class="gr">
+    <div class="cx larga">
+      <h2>Conta real <span class="sub" id="r-estado">· a ligar…</span></h2>
+      <div class="dinh">
+        <div><div class="k">Saldo</div><div class="n" id="r-saldo">—</div><div class="u" id="r-saldo-u"></div></div>
+        <div><div class="k">Patrimônio</div><div class="n" id="r-patr">—</div><div class="u">saldo + posição aberta</div></div>
+        <div><div class="k">Posição do robô</div><div class="n" id="r-pos">—</div><div class="u" id="r-pos-u"></div></div>
+        <div><div class="k">Resultado do robô</div><div class="n" id="r-acum">—</div><div class="u" id="r-acum-u"></div></div>
+      </div>
+      <div class="rolo" style="margin-top:16px"><table id="r-ops"></table></div>
+    </div>
+  </div>
+
+  <h2 style="margin:34px 0 0">Estudo com a cotação real (jul/2025 → set/2026)</h2>
+
+  <div class="gr g3">
+    <div class="cx"><div class="rot">Saldo</div><div class="conta-n" id="c-saldo" style="font-size:40px">—</div><div class="sub" id="c-saldo-o"></div></div>
+    <div class="cx"><div class="rot">Operações</div><div class="conta-n" id="c-ops" style="font-size:40px">—</div><div class="sub" id="c-ops-o"></div></div>
+    <div class="cx"><div class="rot">Maior queda</div><div class="conta-n" id="c-dd" style="font-size:40px">—</div><div class="sub" id="c-dd-o"></div></div>
+  </div>
+
+  <div class="gr">
+    <div class="cx larga">
+      <h2>Evolução do saldo (USD)</h2>
+      <svg class="graf" id="graf" viewBox="0 0 300 150" preserveAspectRatio="none"></svg>
+      <div class="sub" id="graf-nota" style="margin-top:6px"></div>
+    </div>
+    <div class="cx larga">
+      <h2>Entradas e saídas <span class="sub">· hora de Chicago</span></h2>
+      <div class="rolo"><table id="ops"></table></div>
+    </div>
+  </div>
+
+  <div class="sub" style="margin-top:12px">Conta de 10.000 USD, risco de 0,5% por operação, com a cotação real do mercado nas divulgações de jul/2025 a set/2026. Resultados líquidos, já com o custo da corretora. É estudo, não conta real, e são poucas operações: a conta real está no quadro acima.</div>
+
+  <div class="rodape">Os relógios e a contagem correm no seu navegador; a conta real é lida a cada minuto.</div>
+</div>
+
+<script src="estudo.js"></script>
+<script>
+const el = id => document.getElementById(id);
+const LON = 'Europe/London', CHI = 'America/Chicago';
+const DIAS = ['2026-10-20', '2026-11-17'];          // datas de Londres; o ONS ainda nao publicou dezembro
+const dataBR = s => s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4);
+
+function zonaMs(fuso, dia, hh, mm){
+  const [y,m,d] = dia.split('-').map(Number);
+  let t = Date.UTC(y, m-1, d, hh, mm);
+  for (let i=0;i<2;i++){
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:fuso,hourCycle:'h23',
+      year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(new Date(t))
+      .map(x=>[x.type,x.value]));
+    t += Date.UTC(y, m-1, d, hh, mm) - Date.UTC(+p.year, +p.month-1, +p.day, +p.hour, +p.minute);
+  }
+  return t;
+}
+function marcos(dia){
+  const nt = zonaMs(LON, dia, 7, 0), h = 3600e3, min = 60e3;
+  return {prep: nt-16*h, jan: nt-2*h, nt, fim: nt+241*min};
+}
+function dur(ms){
+  let s = Math.max(0, Math.floor(ms/1000));
+  const d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60), x=s%60;
+  const p=n=>String(n).padStart(2,'0');
+  return d>0 ? `${d}d ${p(h)}:${p(m)}:${p(x)}` : `${p(h)}:${p(m)}:${p(x)}`;
+}
+const fmt = (ms, fuso, opt) => new Intl.DateTimeFormat('pt-BR',Object.assign({timeZone:fuso},opt)).format(new Date(ms));
+const hm = (ms, fuso) => fmt(ms, fuso, {hour:'2-digit',minute:'2-digit',hour12:false});
+
+const RELOGIOS = [['Londres',LON],['Chicago',CHI],['Brasília','America/Sao_Paulo'],['UTC','UTC']];
+function pintaRelogios(agora){
+  el('relogios').innerHTML = RELOGIOS.map(([nome,f]) =>
+    `<div><div class="c">${nome}</div><div class="h">${fmt(agora,f,{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})}</div>`
+    + `<div class="d">${fmt(agora,f,{weekday:'short',day:'2-digit',month:'short'})}</div></div>`).join('');
+}
+
+function pinta(){
+  const agora = Date.now();
+  pintaRelogios(agora);
+  const dia = DIAS.find(d => marcos(d).fim > agora);
+  if (!dia){
+    el('conta-rot').textContent = 'Sem notícia marcada'; el('conta').textContent = '—';
+    el('conta-quando').textContent = 'A próxima data ainda não foi publicada pelo instituto de estatística do Reino Unido.';
+    el('etapas').innerHTML = ''; return;
+  }
+  const M = marcos(dia);
+  const F = [
+    ['Aguardando', 'o robô espera a véspera da notícia', null, M.prep],
+    ['Preparação', `o robô acompanha o mercado da véspera (desde ${hm(M.prep,CHI)})`, M.prep, M.jan],
+    ['Janela de entrada', `${hm(M.jan,CHI)} → ${hm(M.nt,CHI)}: se o padrão se confirmar, o robô entra; senão, não opera`, M.jan, M.nt],
+    ['Notícia e gestão', `sai o desemprego do Reino Unido (${hm(M.nt,CHI)}); a posição, se houver, é gerida pelo robô até ${hm(M.fim,CHI)}`, M.nt, M.fim],
+    ['Encerrada', 'fim da madrugada', M.fim, null],
+  ];
+  const i = F.findIndex(([, , ini, fim]) => (ini===null || agora >= ini) && (fim===null || agora < fim));
+  const prox = F[i+1];
+  el('conta-rot').textContent = prox ? 'Falta para a fase ' + prox[0] : 'Madrugada encerrada';
+  el('conta').textContent = prox ? dur(prox[2] - agora) : '—';
+  el('conta-quando').textContent = 'Desemprego do Reino Unido de ' + fmt(M.nt, LON, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
+    + ' · 07:00 Londres = ' + hm(M.nt,CHI) + ' Chicago = ' + hm(M.nt,'America/Sao_Paulo') + ' Brasília';
+  const pct = Math.min(100, Math.max(0, (agora - M.prep)/(M.fim - M.prep)*100));
+  el('barra-dia').style.width = pct + '%';
+  el('barra-lado').textContent = pct>0 ? Math.round(pct)+'%' : 'ainda não começou';
+  el('proximos').textContent = 'Próximas datas: ' + DIAS.filter(d => marcos(d).fim > agora).map(dataBR).join(' · ')
+    + ' · dezembro ainda não publicado';
+  el('etapas-dia').textContent = '· ' + dataBR(dia);
+  el('etapas').innerHTML = F.map(([n,det],k) => {
+    const cls = k<i ? 'et-feito' : k===i ? 'et-agora' : '';
+    const selo = k<i ? 'feito' : k===i ? 'agora' : 'por vir';
+    return `<div class="etapa ${cls}"><div class="nu">${k+1}</div><div><div class="nome">${n}</div><div class="det">${det}</div></div><div class="selo">${selo}</div></div>`;
+  }).join('');
+}
+
+const n2 = v => (+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const sg = v => (v>0?'+':v<0?'−':'') + n2(Math.abs(v));
+const cls = v => v>0 ? 'pos' : v<0 ? 'neg' : '';
+const br = s => s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(2,4)+' '+s.slice(11);
+
+// ------------------------------------------------ estudo
+(function(){
+  const C = ESTUDO, O = C.ops, fim = O[O.length-1].saldo, luc = fim - C.inicial;
+  const ganhas = O.filter(o => o.usd > 0).length;
+  el('c-saldo').textContent = n2(fim);
+  el('c-saldo-o').textContent = `${sg(luc)} USD (${sg(luc/C.inicial*100)}%) desde ${n2(C.inicial)}`;
+  el('c-ops').textContent = `${ganhas}/${O.length}`;
+  el('c-ops-o').textContent = `operações com ganho · em ${C.noticias} divulgações, o robô só entrou em ${O.length}`;
+  el('c-dd').textContent = n2(C.dd_patrimonio) + '%';
+  el('c-dd-o').textContent = 'no patrimônio, dentro de uma operação; nenhuma perda fechada';
+
+  const pts = [C.inicial].concat(O.map(o => o.saldo));
+  const mn = Math.min(...pts), mx = Math.max(...pts), W=300, H=150, pad=8;
+  const x = i => i/(pts.length-1)*W, y = v => H-pad - (v-mn)/(mx-mn||1)*(H-2*pad);
+  el('graf').innerHTML = `<line x1="0" x2="${W}" y1="${y(C.inicial)}" y2="${y(C.inicial)}" stroke="#E4DFD5" stroke-width="1" vector-effect="non-scaling-stroke"/>`
+    + `<polyline fill="none" stroke="#20558A" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts.map((v,i)=>x(i)+','+y(v)).join(' ')}"/>`;
+  el('graf-nota').textContent = `de ${n2(C.inicial)} a ${n2(fim)} USD em ${O.length} operações · linha cinza = saldo inicial`;
+
+  el('ops').innerHTML = '<tr><th>Entrada</th><th>Saída</th><th>Lado</th><th>Resultado</th><th>Saldo</th></tr>'
+    + O.slice().reverse().map(o => `<tr><td>${br(o.ent)}</td><td>${br(o.sai)}</td><td>${o.lado}</td>`
+      + `<td class="${cls(o.usd)}">${sg(o.usd)}</td><td>${n2(o.saldo)}</td></tr>`).join('');
+})();
+
+// ------------------------------------------------ conta real (vigia na VPS -> MySQL -> Railway)
+const URL_CONTA = 'https://dados-cpi-conta-production.up.railway.app/desemprego-uk.json';
+async function contaReal(){
+  let d;
+  try { d = await (await fetch(URL_CONTA, {cache:'no-store'})).json(); }
+  catch(e){ el('r-estado').textContent = '· sem ligação aos dados agora'; return; }
+  if (d.erro){ el('r-estado').textContent = '· aguardando o primeiro sinal do vigia'; el('selo').textContent = 'Robô a ligar'; return; }
+  const idade = (Date.now() - Date.parse(d.atualizado_utc))/60000;
+  const vivo = idade < 10;
+  if (d.aguardando){
+    el('r-estado').textContent = vivo ? '· o vigia está ligado; aguardando o robô aparecer numa conta' : '· vigia sem sinal';
+    el('selo').textContent = 'Robô a ligar'; return;
+  }
+  el('selo').textContent = 'Robô ativo';
+  el('r-estado').textContent = vivo
+    ? `· ao vivo, atualizado há ${Math.max(0,Math.round(idade))} min`
+    : `· vigia sem sinal desde ${fmt(Date.parse(d.atualizado_utc),'America/Sao_Paulo',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} (Brasília)`;
+  el('r-saldo').textContent = n2(d.saldo); el('r-saldo-u').textContent = d.moeda + ' · a conta inteira';
+  el('r-patr').textContent = n2(d.patrimonio);
+  if (d.aberta){
+    el('r-pos').innerHTML = `<span class="${cls(d.aberta.usd)}">${sg(d.aberta.usd)}</span>`;
+    el('r-pos-u').textContent = `${d.aberta.lado} ${n2(d.aberta.lote)} lote desde ${d.aberta.ent.slice(11)} Chicago`;
+  } else { el('r-pos').textContent = 'nenhuma'; el('r-pos-u').textContent = 'fora da janela da notícia, é o normal'; }
+  const acum = d.ops.reduce((a,o)=>a+o.usd,0), g = d.ops.filter(o=>o.usd>0).length;
+  el('r-acum').innerHTML = d.ops.length ? `<span class="${cls(acum)}">${sg(acum)}</span>` : '—';
+  el('r-acum-u').textContent = d.ops.length ? `${g} de ${d.ops.length} com ganho, desde 19/10/2026` : 'ainda sem operação fechada';
+  el('r-ops').innerHTML = d.ops.length
+    ? '<tr><th>Entrada (Chicago)</th><th>Saída (Chicago)</th><th>Lado</th><th>Lote</th><th>Resultado</th></tr>'
+      + d.ops.slice().reverse().map(o => `<tr><td>${br(o.ent)}</td><td>${br(o.sai)}</td><td>${o.lado}</td><td>${n2(o.lote)}</td><td class="${cls(o.usd)}">${sg(o.usd)}</td></tr>`).join('')
+    : '';
+}
+contaReal(); setInterval(contaReal, 60000);
+pinta(); setInterval(pinta, 1000);
+</script>
+</body>
+</html>
