@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070B14">
+<title>CPI News FTMO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<div class="env">
+
+  <div class="cab">
+    <div>
+      <h1>CPI News FTMO</h1>
+      <div class="sub">Robô automático · fases do dia da notícia</div>
+    </div>
+    <div class="selo-saude">Robô ativo</div>
+  </div>
+
+  <div class="gr g2">
+    <div class="cx heroi">
+      <div class="rot" id="conta-rot">—</div>
+      <div class="conta-n" id="conta">—</div>
+      <div class="sub" id="conta-quando" style="margin-top:6px"></div>
+      <div style="margin-top:18px">
+        <div style="display:flex;justify-content:space-between" class="sub">
+          <span>Dia da notícia</span><span id="barra-lado"></span></div>
+        <div class="barra o"><i id="barra-dia" style="width:0%"></i></div>
+      </div>
+      <div class="sub" style="margin-top:14px" id="proximos"></div>
+    </div>
+    <div class="cx">
+      <h2>Relógios</h2>
+      <div class="rel" id="relogios"></div>
+    </div>
+  </div>
+
+  <div class="gr">
+    <div class="cx larga">
+      <h2>Fases <span class="sub" id="etapas-dia"></span></h2>
+      <div id="etapas"></div>
+      <div class="sub" style="margin-top:10px">As fases seguem o relógio.</div>
+    </div>
+  </div>
+
+  <div class="gr">
+    <div class="cx larga">
+      <h2>Conta real <span class="sub" id="r-estado">· a ligar…</span></h2>
+      <div class="dinh">
+        <div><div class="k">Saldo</div><div class="n" id="r-saldo">—</div><div class="u" id="r-saldo-u"></div></div>
+        <div><div class="k">Patrimônio</div><div class="n" id="r-patr">—</div><div class="u">saldo + posição aberta</div></div>
+        <div><div class="k">Posição do robô</div><div class="n" id="r-pos">—</div><div class="u" id="r-pos-u"></div></div>
+        <div><div class="k">Resultado do robô</div><div class="n" id="r-acum">—</div><div class="u" id="r-acum-u"></div></div>
+      </div>
+      <div class="rolo" style="margin-top:16px"><table id="r-ops"></table></div>
+    </div>
+  </div>
+
+  <div class="secao">Simulação no MetaTrader<span>set/2025 → set/2026 · conta de 10.000 USD</span></div>
+
+  <div class="gr g3">
+    <div class="cx"><div class="rot">Saldo</div><div class="conta-n" id="c-saldo" style="font-size:40px">—</div><div class="sub" id="c-saldo-o"></div></div>
+    <div class="cx"><div class="rot">Operações</div><div class="conta-n" id="c-ops" style="font-size:40px">—</div><div class="sub" id="c-ops-o"></div></div>
+    <div class="cx"><div class="rot">Maior queda</div><div class="conta-n" id="c-dd" style="font-size:40px">—</div><div class="sub" id="c-dd-o"></div></div>
+  </div>
+
+  <div class="gr">
+    <div class="cx larga">
+      <h2>Evolução do saldo (USD)</h2>
+      <svg class="graf" id="graf" viewBox="0 0 300 150" preserveAspectRatio="none"></svg>
+      <div class="sub" id="graf-nota" style="margin-top:6px"></div>
+    </div>
+    <div class="cx larga">
+      <h2>Entradas e saídas <span class="sub">· hora de Nova Iorque</span></h2>
+      <div class="rolo"><table id="ops"></table></div>
+    </div>
+  </div>
+
+  <div class="sub" style="margin-top:12px">Conta de 10.000 USD, risco de 1% por operação: a mesma série simulada no MetaTrader (Strategy Tester, set/2025 → set/2026), com cada resultado no mesmo tamanho em relação ao risco. Resultados líquidos. É simulação; a conta real está no quadro acima.</div>
+
+  <div class="rodape">Os relógios e a contagem correm no seu navegador; a conta real é lida a cada minuto.</div>
+</div>
+
+<script src="conta.js"></script>
+<script>
+const el = id => document.getElementById(id);
+const NY = 'America/New_York';
+const DIAS = ['2026-10-14', '2026-11-10', '2026-12-10'];
+const dataBR = s => s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4);
+
+function nyMs(dia, hh, mm){
+  const [y,m,d] = dia.split('-').map(Number);
+  let t = Date.UTC(y, m-1, d, hh, mm);
+  for (let i=0;i<2;i++){
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:NY,hourCycle:'h23',
+      year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(new Date(t))
+      .map(x=>[x.type,x.value]));
+    t += Date.UTC(y, m-1, d, hh, mm) - Date.UTC(+p.year, +p.month-1, +p.day, +p.hour, +p.minute);
+  }
+  return t;
+}
+const sexta = dia => new Date(dia+'T12:00:00Z').getUTCDay() === 5;
+function marcos(dia){
+  const nt = nyMs(dia,8,30), min = 60e3;
+  return {ini:nt-60*min, nt, an:nt+30*min, op:nt+45*min, fim: sexta(dia) ? nyMs(dia,16,50) : nyMs(dia,21,0)};
+}
+function dur(ms){
+  let s = Math.max(0, Math.floor(ms/1000));
+  const d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60), x=s%60;
+  const p=n=>String(n).padStart(2,'0');
+  return d>0 ? `${d}d ${p(h)}:${p(m)}:${p(x)}` : `${p(h)}:${p(m)}:${p(x)}`;
+}
+const fmt = (ms, fuso, opt) => new Intl.DateTimeFormat('pt-BR',Object.assign({timeZone:fuso},opt)).format(new Date(ms));
+
+const RELOGIOS = [['Nova Iorque',NY],['Chicago','America/Chicago'],['Brasília','America/Sao_Paulo'],['UTC','UTC']];
+function pintaRelogios(agora){
+  el('relogios').innerHTML = RELOGIOS.map(([nome,f]) =>
+    `<div><div class="c">${nome}</div><div class="h">${fmt(agora,f,{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})}</div>`
+    + `<div class="d">${fmt(agora,f,{weekday:'short',day:'2-digit',month:'short'})}</div></div>`).join('');
+}
+
+function pinta(){
+  const agora = Date.now();
+  pintaRelogios(agora);
+  const dia = DIAS.find(d => marcos(d).fim > agora);
+  if (!dia){
+    el('conta-rot').textContent = 'Sem notícia marcada'; el('conta').textContent = '—';
+    el('conta-quando').textContent = 'O calendário de 2027 ainda não foi publicado.';
+    el('etapas').innerHTML = ''; return;
+  }
+  const M = marcos(dia);
+  const F = [
+    ['Aguardando', 'o robô espera o dia da notícia', null, M.ini],
+    ['Preparação', 'o robô registra o mercado antes da notícia', M.ini, M.nt],
+    ['Notícia', 'sai o CPI dos EUA (08:30 Nova Iorque)', M.nt, M.an],
+    ['Análise', 'o robô avalia a reação do mercado e decide', M.an, M.op],
+    ['Em operação', 'janela em que a posição, se houver, é gerida pelo robô', M.op, M.fim],
+    ['Encerrada', 'fim da janela do dia', M.fim, null],
+  ];
+  const i = F.findIndex(([, , ini, fim]) => (ini===null || agora >= ini) && (fim===null || agora < fim));
+  const prox = F[i+1];
+  el('conta-rot').textContent = prox ? 'Falta para a fase ' + prox[0] : 'Dia encerrado';
+  el('conta').textContent = prox ? dur(prox[2] - agora) : '—';
+  el('conta-quando').textContent = 'CPI de ' + fmt(nyMs(dia,12,0), NY, {weekday:'long',day:'2-digit',month:'long',year:'numeric'})
+    + ' · 08:30 Nova Iorque = ' + fmt(M.nt,'America/Sao_Paulo',{hour:'2-digit',minute:'2-digit'}) + ' Brasília';
+  const pct = Math.min(100, Math.max(0, (agora - M.ini)/(M.fim - M.ini)*100));
+  el('barra-dia').style.width = pct + '%';
+  el('barra-lado').textContent = pct>0 ? Math.round(pct)+'%' : 'ainda não começou';
+  el('proximos').textContent = 'Próximas datas: ' + DIAS.filter(d => marcos(d).fim > agora).map(dataBR).join(' · ');
+  el('etapas-dia').textContent = '· ' + dataBR(dia);
+  el('etapas').innerHTML = F.map(([n,det],k) => {
+    const cls = k<i ? 'et-feito' : k===i ? 'et-agora' : '';
+    const selo = k<i ? 'feito' : k===i ? 'agora' : 'por vir';
+    return `<div class="etapa ${cls}"><div class="nu">${k+1}</div><div><div class="nome">${n}</div><div class="det">${det}</div></div><div class="selo">${selo}</div></div>`;
+  }).join('');
+}
+
+// ------------------------------------------------ conta
+(function(){
+  const C = CONTA, O = C.ops, fim = O[O.length-1].saldo, luc = fim - C.inicial;
+  const n2 = v => (+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const sg = v => (v>0?'+':v<0?'−':'') + n2(Math.abs(v));
+  const cls = v => v>0 ? 'pos' : v<0 ? 'neg' : '';
+  const br = s => s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(2,4);
+  const ganhas = O.filter(o => o.usd > 0).length;
+  el('c-saldo').textContent = n2(fim);
+  el('c-saldo-o').textContent = `${sg(luc)} USD (${sg(luc/C.inicial*100)}%) desde ${n2(C.inicial)}`;
+  el('c-ops').textContent = `${ganhas}/${O.length}`;
+  el('c-ops-o').textContent = `operações com ganho · uma por mês`;
+  el('c-dd').textContent = n2(C.dd_patrimonio).replace(/,?0+$/,'') + '%';
+  el('c-dd-o').textContent = `no patrimônio; ${n2(C.dd_saldo)}% no saldo fechado`;
+
+  const pts = [C.inicial].concat(O.map(o => o.saldo));
+  const mn = Math.min(...pts), mx = Math.max(...pts), W=300, H=150, pad=8;
+  const x = i => i/(pts.length-1)*W, y = v => H-pad - (v-mn)/(mx-mn||1)*(H-2*pad);
+  const linha = pts.map((v,i)=>x(i)+','+y(v)).join(' ');
+  el('graf').innerHTML = `<defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22D3EE" stop-opacity=".35"/><stop offset="1" stop-color="#22D3EE" stop-opacity="0"/></linearGradient></defs>`
+    + `<polygon fill="url(#ar)" points="0,${H} ${linha} ${W},${H}"/>`
+    + `<line x1="0" x2="${W}" y1="${y(C.inicial)}" y2="${y(C.inicial)}" stroke="#2A3650" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>`
+    + `<polyline fill="none" stroke="#22D3EE" stroke-width="2.5" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 4px rgba(34,211,238,.7))" points="${linha}"/>`;
+  el('graf-nota').textContent = `de ${n2(C.inicial)} a ${n2(fim)} USD em ${O.length} operações · linha tracejada = saldo inicial`;
+
+  el('ops').innerHTML = '<tr><th>Entrada</th><th>Saída</th><th>Lado</th><th>Lote</th><th>Resultado</th><th>Saldo</th></tr>'
+    + O.slice().reverse().map(o => `<tr><td>${br(o.ent)} ${o.ent.slice(11)}</td><td>${br(o.sai)} ${o.sai.slice(11)}</td><td>${o.lado}</td>`
+      + `<td>${n2(o.lote)}</td><td class="${cls(o.usd)}">${sg(o.usd)}</td><td>${n2(o.saldo)}</td></tr>`).join('')
+    + '<tr><td colspan="6" class="sub" style="white-space:normal">11/09/2026: na simulação a posição ficou aberta no fim de semana e o ganho saiu maior do que o normal. A versão atual do robô fecha antes do fim de semana.</td></tr>';
+})();
+
+// ------------------------------------------------ conta real (vigia na VPS -> MySQL -> Railway)
+const URL_CONTA = 'https://dados-cpi-conta-production.up.railway.app/conta-ftmo.json';
+async function contaReal(){
+  const n2 = v => (+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const sg = v => (v>0?'+':v<0?'−':'') + n2(Math.abs(v));
+  const cls = v => v>0 ? 'pos' : v<0 ? 'neg' : '';
+  const br = s => s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(2,4)+' '+s.slice(11);
+  let d;
+  try { d = await (await fetch(URL_CONTA, {cache:'no-store'})).json(); }
+  catch(e){ el('r-estado').textContent = '· sem ligação aos dados agora'; return; }
+  if (d.erro){ el('r-estado').textContent = '· aguardando o primeiro sinal do vigia'; return; }
+  const idade = (Date.now() - Date.parse(d.atualizado_utc))/60000;
+  el('r-estado').textContent = idade < 10
+    ? `· ao vivo, atualizado há ${Math.max(0,Math.round(idade))} min`
+    : `· vigia sem sinal desde ${fmt(Date.parse(d.atualizado_utc),'America/Sao_Paulo',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} (Brasília)`;
+  el('r-saldo').textContent = n2(d.saldo); el('r-saldo-u').textContent = d.moeda + ' · a conta inteira';
+  el('r-patr').textContent = n2(d.patrimonio);
+  if (d.aberta){
+    el('r-pos').innerHTML = `<span class="${cls(d.aberta.usd)}">${sg(d.aberta.usd)}</span>`;
+    el('r-pos-u').textContent = `${d.aberta.lado} ${n2(d.aberta.lote)} lote desde ${d.aberta.ent.slice(11)} NY`;
+  } else { el('r-pos').textContent = 'nenhuma'; el('r-pos-u').textContent = 'fora do dia da notícia, é o normal'; }
+  const acum = d.ops.reduce((a,o)=>a+o.usd,0), g = d.ops.filter(o=>o.usd>0).length;
+  el('r-acum').innerHTML = d.ops.length ? `<span class="${cls(acum)}">${sg(acum)}</span>` : '—';
+  el('r-acum-u').textContent = d.ops.length ? `${g} de ${d.ops.length} com ganho, desde 09/11/2026` : 'ainda sem operação fechada';
+  el('r-ops').innerHTML = d.ops.length
+    ? '<tr><th>Entrada (NY)</th><th>Saída (NY)</th><th>Lado</th><th>Lote</th><th>Resultado</th></tr>'
+      + d.ops.slice().reverse().map(o => `<tr><td>${br(o.ent)}</td><td>${br(o.sai)}</td><td>${o.lado}</td><td>${n2(o.lote)}</td><td class="${cls(o.usd)}">${sg(o.usd)}</td></tr>`).join('')
+    : '';
+}
+contaReal(); setInterval(contaReal, 60000);
+pinta(); setInterval(pinta, 1000);
+</script>
+</body>
+</html>

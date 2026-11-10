@@ -1,0 +1,87 @@
+/* CPI News FTMO: mesma página da Crypto Funder, versão escura e mais arrojada. Nenhuma informação a mais. */
+:root{
+  --papel:#070B14; --cartao:#0F1626; --cartao2:#131C30; --tinta:#EAF0FA; --fraco:#8592AB; --linha:#1F2A40;
+  --azul:#3B82F6; --ciano:#22D3EE; --verde:#34D399; --ocre:#FBBF24; --rubro:#F87171; --calma:#1A2338;
+  --brilho:0 0 24px rgba(34,211,238,.35);
+}
+*{box-sizing:border-box}
+html{background:var(--papel)}
+body{margin:0;color:var(--tinta);font:15px/1.6 Inter,system-ui,-apple-system,Segoe UI,sans-serif;
+  background:
+    radial-gradient(900px 480px at 85% -10%, rgba(59,130,246,.22), transparent 60%),
+    radial-gradient(700px 420px at -10% 10%, rgba(34,211,238,.12), transparent 60%),
+    var(--papel);
+  min-height:100vh}
+.env{max-width:1160px;margin:0 auto;padding:34px 16px 80px}
+h1{font:700 44px/1.02 "Space Grotesk",Inter,sans-serif;margin:0;letter-spacing:-1.5px;
+  background:linear-gradient(92deg,#FFFFFF 0%,#A5F3FC 45%,#3B82F6 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+@media(max-width:500px){h1{font-size:34px}}
+h2{font:600 11px Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fraco);margin:0 0 14px}
+.cab{padding-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;
+  border-bottom:1px solid var(--linha);position:relative}
+.cab::after{content:"";position:absolute;left:0;bottom:-1px;width:180px;height:2px;
+  background:linear-gradient(90deg,var(--ciano),transparent)}
+.cab .sub{color:var(--fraco);font-size:13.5px;margin-top:8px}
+.cx{background:linear-gradient(180deg,var(--cartao2),var(--cartao));border:1px solid var(--linha);border-radius:14px;
+  padding:22px;min-width:0;box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03)}
+.gr{display:grid;gap:18px;margin-top:18px}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.g2{grid-template-columns:1.25fr 1fr}
+.larga{grid-column:1/-1}
+@media(max-width:860px){.g2{grid-template-columns:1fr}}
+
+.heroi{position:relative;overflow:hidden;border-color:rgba(34,211,238,.35)}
+.heroi::before{content:"";position:absolute;inset:-40% -20% auto auto;width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle,rgba(34,211,238,.18),transparent 70%);pointer-events:none}
+
+.conta-n{font:700 60px "Space Grotesk",Inter,sans-serif;letter-spacing:-2.5px;line-height:1;font-variant-numeric:tabular-nums}
+.heroi .conta-n{color:#fff;text-shadow:var(--brilho)}
+@media(max-width:500px){.conta-n{font-size:44px}}
+.rot{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ciano)}
+.barra{height:10px;background:var(--calma);border-radius:99px;overflow:hidden;margin-top:8px}
+.barra i{display:block;height:100%;background:linear-gradient(90deg,var(--azul),var(--ciano));transition:width .4s;
+  box-shadow:0 0 14px rgba(34,211,238,.6)}
+.rel{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:14px}
+.rel .c{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--fraco)}
+.rel .h{font:600 26px "Space Grotesk",Inter,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.rel .d{font-size:12px;color:var(--fraco)}
+
+.etapa{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:12px 0}
+.etapa+.etapa{border-top:1px solid var(--linha)}
+.etapa .nu{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+  font:700 13px "Space Grotesk",sans-serif;color:var(--fraco);border:1px solid var(--linha)}
+.etapa .nome{font-weight:600} .etapa .det{font-size:13px;color:var(--fraco)}
+.etapa .selo{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--fraco);white-space:nowrap}
+.et-feito .nu{color:#06281D;background:var(--verde);border-color:var(--verde)}
+.et-feito .selo{color:var(--verde)}
+.et-agora{background:linear-gradient(90deg,rgba(34,211,238,.10),transparent);margin:0 -10px;padding-left:10px;padding-right:10px;
+  border-radius:10px}
+.et-agora .nu{color:#04202A;background:var(--ciano);border-color:var(--ciano);box-shadow:var(--brilho)}
+.et-agora .selo{color:var(--ciano);font-weight:600}
+
+.sub{color:var(--fraco);font-size:12.5px}
+.selo-saude{display:flex;align-items:center;gap:9px;border:1px solid rgba(52,211,153,.5);color:var(--verde);border-radius:99px;
+  padding:7px 14px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:rgba(52,211,153,.08)}
+.selo-saude::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--verde);
+  box-shadow:0 0 0 0 rgba(52,211,153,.7);animation:pulso 1.8s infinite}
+@keyframes pulso{0%{box-shadow:0 0 0 0 rgba(52,211,153,.7)}70%{box-shadow:0 0 0 10px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+@media(prefers-reduced-motion:reduce){.selo-saude::before{animation:none}}
+
+.dinh{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:20px}
+.dinh>div{padding:14px 16px;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid var(--linha)}
+.dinh .k{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--fraco)}
+.dinh .n{font:700 28px "Space Grotesk",Inter,sans-serif;letter-spacing:-.8px;margin-top:4px;font-variant-numeric:tabular-nums}
+.dinh .u{font-size:12.5px;color:var(--fraco);margin-top:2px}
+
+.rolo{max-height:340px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--fraco);
+   font-weight:600;padding:0 10px 9px 0;border-bottom:1px solid var(--linha);position:sticky;top:0;background:var(--cartao)}
+td{padding:9px 10px 9px 0;border-bottom:1px solid var(--linha);white-space:nowrap}
+tr:hover td{background:rgba(34,211,238,.04)}
+.pos{color:var(--verde)} .neg{color:var(--rubro)}
+svg.graf{display:block;width:100%;height:170px}
+.secao{font:700 22px "Space Grotesk",Inter,sans-serif;letter-spacing:-.5px;margin:40px 0 0;color:var(--tinta)}
+.secao span{color:var(--fraco);font:500 13px Inter,sans-serif;letter-spacing:0;margin-left:8px}
+.rodape{margin-top:28px;color:var(--fraco);font-size:12.5px;border-top:1px solid var(--linha);padding-top:14px}
